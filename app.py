@@ -1,15 +1,23 @@
+import os
 import pickle
 import numpy as np
 from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# Load the trained SVM model
-MODEL_PATH = "SVM_model_pkl"
+# Build dynamic absolute path to ensure file loading works on Render
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Check for 'SVM_model_pkl' or fallback to 'SVM_model.pkl'
+MODEL_PATH = os.path.join(BASE_DIR, "SVM_model_pkl")
+if not os.path.exists(MODEL_PATH):
+    MODEL_PATH = os.path.join(BASE_DIR, "SVM_model.pkl")
+
+# Load trained SVM model
 with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
 
-# Built-in Single Page Interface with Glassmorphism UI & Keyframe Animations
+# Front-End UI Template with CSS & Animations Embedded
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +32,6 @@ HTML_TEMPLATE = """
             --card-bg: rgba(255, 255, 255, 0.05);
             --card-border: rgba(255, 255, 255, 0.12);
             --accent-color: #6366f1;
-            --accent-hover: #4f46e5;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -44,7 +51,6 @@ HTML_TEMPLATE = """
             justify-content: center;
             align-items: center;
             padding: 2rem 1rem;
-            overflow-x: hidden;
         }
 
         .container {
@@ -96,7 +102,6 @@ HTML_TEMPLATE = """
             font-weight: 600;
             margin-bottom: 0.4rem;
             color: #cbd5e1;
-            text-transform: capitalize;
         }
 
         .input-group input, .input-group select {
@@ -162,7 +167,6 @@ HTML_TEMPLATE = """
             color: #38bdf8;
         }
 
-        /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -176,11 +180,6 @@ HTML_TEMPLATE = """
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.9); }
             to { opacity: 1; transform: scale(1); }
-        }
-
-        @media (max-width: 600px) {
-            .container { padding: 1.5rem; }
-            header h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -275,7 +274,6 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Get feature values from form request
         features = [
             float(request.form["gender"]),
             float(request.form["age"]),
@@ -288,10 +286,7 @@ def predict():
             float(request.form["final_score"])
         ]
         
-        # Convert inputs into 2D array expected by scikit-learn
         input_data = np.array([features])
-        
-        # Make prediction
         prediction = model.predict(input_data)[0]
         
         return render_template_string(HTML_TEMPLATE, prediction=str(prediction))
